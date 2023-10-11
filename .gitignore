@@ -1,160 +1,144 @@
-# Byte-compiled / optimized / DLL files
-__pycache__/
-*.py[cod]
-*$py.class
+import pygame as pg, math, random
 
-# C extensions
-*.so
+pg.init()
 
-# Distribution / packaging
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-share/python-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-MANIFEST
+SIZE_X = 1400
+SIZE_Y = 800
+FPS = 60
+run = True
 
-# PyInstaller
-#  Usually these files are written by a python script from a template
-#  before PyInstaller builds the exe, so as to inject date/other infos into it.
-*.manifest
-*.spec
+x_pos = []
+y_pos = []
+radius = []
+mass = []
+total_x = []
+total_y = []
+x_vel = []
+y_vel = []
 
-# Installer logs
-pip-log.txt
-pip-delete-this-directory.txt
+mode = input('Wanna create your own planetary system (create), or generate it randomly?(generate) ')
 
-# Unit test / coverage reports
-htmlcov/
-.tox/
-.nox/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*.cover
-*.py,cover
-.hypothesis/
-.pytest_cache/
-cover/
+if mode == 'generate':
+    bodies_num = input('How many bodies to simulate?: ')
+    for body in range(int(bodies_num)):
+        x_pos.append(random.randint(0, SIZE_X))
+        y_pos.append(random.randint(0, SIZE_Y))
+        radius.append(random.randint(3, 12))
+        mass.append(int(radius[body])*10**24)
+        x_vel.append(int(0))
+        y_vel.append(int(0))
 
-# Translations
-*.mo
-*.pot
+elif mode == 'create':
+    bodies_num = input('How many bodies to simulate?: ')
+    for BODY in range(int(bodies_num)):
+        x = input('X position of planet: ')
+        y = input('Y position of planet: ')
+        rad = input('Planet radius: ')
+        x_velocity = input('Planet x velocity: ')
+        y_velocity = input('Planet y velocity: ')
 
-# Django stuff:
-*.log
-local_settings.py
-db.sqlite3
-db.sqlite3-journal
+        x_pos.append(int(x))
+        y_pos.append(int(y))
+        radius.append(int(rad))
+        mass.append(int(radius[BODY])*10**24)
+        x_vel.append(int(x_velocity))
+        y_vel.append(int(y_velocity))
 
-# Flask stuff:
-instance/
-.webassets-cache
+screen = pg.display.set_mode([SIZE_X, SIZE_Y])
+clock = pg.time.Clock()
 
-# Scrapy stuff:
-.scrapy
 
-# Sphinx documentation
-docs/_build/
+class Bodies():
+    def __init__(self):
+        self.bodies_num = len(x_pos)
+        self.G = 6.67*10**-11
+        self.meters = 500000
+        self.mode = mode
 
-# PyBuilder
-.pybuilder/
-target/
+    def draw(self):
 
-# Jupyter Notebook
-.ipynb_checkpoints
+        #bodies drawing
+        for i in range(self.bodies_num):
+            pg.draw.circle(screen, 'yellow', (x_pos[i], y_pos[i]), radius[i])
 
-# IPython
-profile_default/
-ipython_config.py
+    def calculate(self):
 
-# pyenv
-#   For a library or package, you might want to ignore these files since the code is
-#   intended to run in multiple environments; otherwise, check them in:
-# .python-version
+        #loops for iterating at every single body
+        for body1 in range(self.bodies_num):
+            for body2 in range(self.bodies_num):
 
-# pipenv
-#   According to pypa/pipenv#598, it is recommended to include Pipfile.lock in version control.
-#   However, in case of collaboration, if having platform-specific dependencies or dependencies
-#   having no cross-platform support, pipenv may install dependencies that don't work, or not
-#   install all needed dependencies.
-#Pipfile.lock
+                #checking if both bodies are the same one
+                if body1 == body2:
+                    continue
+                
+                #calculating all distances
+                x_dist = abs(x_pos[body1] - x_pos[body2])
+                y_dist = abs(y_pos[body1] - y_pos[body2])
+                pix_dist = math.sqrt(x_dist**2 + y_dist**2)
+                distance = pix_dist*self.meters
 
-# poetry
-#   Similar to Pipfile.lock, it is generally recommended to include poetry.lock in version control.
-#   This is especially recommended for binary packages to ensure reproducibility, and is more
-#   commonly ignored for libraries.
-#   https://python-poetry.org/docs/basic-usage/#commit-your-poetrylock-file-to-version-control
-#poetry.lock
+                #calculating force
+                force = self.G*mass[body1]*mass[body2]/distance**2
+                
+                #calculating acceleration
+                acc = force/mass[body1]
 
-# pdm
-#   Similar to Pipfile.lock, it is generally recommended to include pdm.lock in version control.
-#pdm.lock
-#   pdm stores project-wide configurations in .pdm.toml, but it is recommended to not include it
-#   in version control.
-#   https://pdm.fming.dev/#use-with-ide
-.pdm.toml
+                #checking if bodies are lined up in any axis
+                if y_dist == 0:
+                    if y_pos[body1] > y_pos[body2]:
+                        acc = acc*-1
+                    total_y.append(acc)
 
-# PEP 582; used by e.g. github.com/David-OConnor/pyflow and github.com/pdm-project/pdm
-__pypackages__/
+                if x_dist == 0:
+                    if x_pos[body1] > x_pos[body2]:
+                        acc = acc*-1
+                    total_x.append(acc)
 
-# Celery stuff
-celerybeat-schedule
-celerybeat.pid
+                else:
+                    
+                    #calculating angle between hypotenuse and sides, and single axes accelerations
+                    theta = math.degrees(math.sin(y_dist/pix_dist))
+                    x_acc = math.cos(math.radians(theta))*acc
+                    y_acc = math.sin(math.radians(theta))*acc
 
-# SageMath parsed files
-*.sage.py
+                    #setting correct direction of vectors in both axes
+                    if x_pos[body1] > x_pos[body2]:
+                        x_acc = x_acc*-1
+                    if y_pos[body1] > y_pos[body2]:
+                        y_acc = y_acc*-1
 
-# Environments
-.env
-.venv
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
+                    #collecting all vectors in both axes
+                    total_x.append(x_acc)
+                    total_y.append(y_acc)
+                
+                #choosing mode
+                if self.mode == 'create':
+                    #adding velocity
+                    x_vel[body1] = x_vel[body1] + sum(total_x)
+                    y_vel[body1] = y_vel[body1] + sum(total_y)
+                    #setting new position
+                    x_pos[body1] =  x_pos[body1] + x_vel[body1]
+                    y_pos[body1] =  y_pos[body1] + y_vel[body1]
+                else:
+                    #setting new position
+                    x_pos[body1] =  x_pos[body1] + sum(total_x)
+                    y_pos[body1] =  y_pos[body1] + sum(total_y)
+                
+                #lists clearing
+                total_x.clear()
+                total_y.clear()
 
-# Spyder project settings
-.spyderproject
-.spyproject
+bodies = Bodies()
 
-# Rope project settings
-.ropeproject
-
-# mkdocs documentation
-/site
-
-# mypy
-.mypy_cache/
-.dmypy.json
-dmypy.json
-
-# Pyre type checker
-.pyre/
-
-# pytype static type analyzer
-.pytype/
-
-# Cython debug symbols
-cython_debug/
-
-# PyCharm
-#  JetBrains specific template is maintained in a separate JetBrains.gitignore that can
-#  be found at https://github.com/github/gitignore/blob/main/Global/JetBrains.gitignore
-#  and can be added to the global gitignore or merged into this file.  For a more nuclear
-#  option (not recommended) you can uncomment the following to ignore the entire idea folder.
-#.idea/
+while run:
+    fps = clock.get_fps()
+    print('FPS: ' + str(fps))
+    clock.tick(FPS)
+    screen.fill('black')
+    for evt in pg.event.get():
+        if evt.type == pg.QUIT:
+            pg.quit()
+            run = False
+    bodies.draw()
+    bodies.calculate()
+    pg.display.flip()
